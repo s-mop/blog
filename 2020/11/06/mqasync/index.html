@@ -1,214 +1,105 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
 
+ <!DOCTYPE HTML>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <!-- semantic UI 样式资源 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  <meta charset="UTF-8">
   
-<link rel="stylesheet" href="/css/Mycss.css">
-
-  
-<link rel="stylesheet" href="/css/content.css">
-
-  
-<link rel="stylesheet" href="/lib/enlighterjs.min.css">
-
-  
-<link rel="stylesheet" href="/css/gototop.css">
-
-  
-<link rel="stylesheet" href="/css/search.css">
-
-  
-<link rel="stylesheet" href="/css/mobile.css">
-
-  
-<link rel="stylesheet" href="/css/countdowntimer.css">
-
-
-
-  <!--Title-->
-
-<title>
+    <title>使用消息队列扩展异步执行的实现方式 | Xinyuan&#39;s Blog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
     
-    使用消息队列扩展异步执行的实现方式 |
+    <meta name="author" content="xinyuan">
     
-    Xinyuan&#39;s Blog
-</title>
 
-<link rel="alternate" href="/atom.xml" title="Xinyuan&#39;s Blog" type="application/atom+xml">
+    
+    <meta name="description" content="背景你可能在你的项目中用过Spring的@Async注解，以此来将部分方法转化为异步执行，从而提高请求的响应效率 但在服务架构不断的演进之中，这种丢入线程池处理的方式带来的缺陷也愈发明显：  不利于监控 如果意外停机，尚未处理的任务会尽数丢失 在集群中的某个节点要处理大量异步任务时，无法将压力分担到集群中其他节点 项目中若集成了使用ThreadLocal特性的模块或第三方组件，需要注意上下文丢失的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用消息队列扩展异步执行的实现方式">
+<meta property="og:url" content="http://www.xinyuanguo.com/2020/11/06/mqasync/index.html">
+<meta property="og:site_name" content="Xinyuan&#39;s Blog">
+<meta property="og:description" content="背景你可能在你的项目中用过Spring的@Async注解，以此来将部分方法转化为异步执行，从而提高请求的响应效率 但在服务架构不断的演进之中，这种丢入线程池处理的方式带来的缺陷也愈发明显：  不利于监控 如果意外停机，尚未处理的任务会尽数丢失 在集群中的某个节点要处理大量异步任务时，无法将压力分担到集群中其他节点 项目中若集成了使用ThreadLocal特性的模块或第三方组件，需要注意上下文丢失的">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-11-06T09:52:00.000Z">
+<meta property="article:modified_time" content="2022-09-07T08:25:04.178Z">
+<meta property="article:author" content="xinyuan">
+<meta name="twitter:card" content="summary">
 
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    
+<link rel="stylesheet" href="/css/style.css">
 
-<link rel="icon" href="/img/avatar.jpg">
-
-
-
-  
-  <!-- Chatra {literal} -->
-<script>
-  (function(d, w, c) {
-      w.ChatraID = 'qa9FdZWL3XK6QTerz';
-      var s = d.createElement('script');
-      w[c] = w[c] || function() {
-          (w[c].q = w[c].q || []).push(arguments);
-      };
-      s.async = true;
-      s.src = 'https://call.chatra.io/chatra.js';
-      if (d.head) d.head.appendChild(s);
-  })(document, window, 'Chatra');
-</script>
-<!-- /Chatra {/literal} -->
-
-  
 <meta name="generator" content="Hexo 6.2.0"></head>
 
-
-<body>
-  <!-- header -->
-<header class="ui segment attached background-deep-green border-none">
-  <div class="ui container header-container grid  stackable">
-    <div class="left floated six wide column">
-      <h1 class="ui header font-thin-yellow">
-        <div class="content">
-          <a href="/" class="title-href">Nothinglin的个人博客</a>
-          <div class="ui divider title-divider"></div>
-          <div class="sub header font-thin-yellow">不积跬步无以至千里，后继才能薄发</div>
-        </div>
-      </h1>
-    </div>
-    <div class="right floated six wide column">
-      <div class="ui content floated right">
-        <div class="content ">
-          <div class="sub header font-thin-yellow row-flex-right">
-            <a href="#" class="ui label margin-left-5 wechat-link">
-              <img class="margin-2" src="/img/wechat.png">
-            </a>
-            <div class="ui special popup">
-              <img src="/img/mywechat.jpg" alt="加我微信">
-            </div>
-
-            <a href="#" class="ui label margin-left-5 public-link">
-              <img class="margin-2" src="/img/public.png">
-            </a>
-            <div class="ui special popup">
-              <img src="/img/subscribe.jpg" alt="加我微信">
-            </div>
-
-            <a target="_blank" rel="noopener" href="https://www.zhihu.com/people/nothing-86-28-47" class="ui label margin-left-5 zhihu-link">
-              <img class="margin-2" src="/img/zhihu.png">
-            </a>
-
-            <a target="_blank" rel="noopener" href="https://www.jianshu.com/u/a47e6b0d2a32" class="ui label margin-left-5 jianshu-link">
-              <img class="margin-2" src="/img/jianshu.png">
-            </a>
-
-            <a target="_blank" rel="noopener" href="https://github.com/Nothing-lin" class="ui label margin-left-5 github-link">
-              <img class="margin-2" src="/img/github.png">
-            </a>
-
-
-            <a href="" class="ui label margin-left-5 weibo-link">
-              <img class="margin-2" src="/img/weibo.png">
-            </a>
-
-
-            <a href="" class="ui label margin-left-5 rss-link">
-              <img class="margin-2" src="/img/rss.png">
-            </a>
-
-          </div>
-          <div class="ui divider title-divider"></div>
-          <div class="sub header font-thin-yellow row-flex-right">
-            <a href="/2021/06/28/推荐一款好用的文本编辑器Typora0/" class="ui label margin-left-5">
-              友情链接
-            </a>
-            <a class="ui label margin-left-5">
-              关于作者
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</header>
-
-  <!-- 菜单导航栏 -->
-<div class="ui segment attached background-thin-yellow padding-less">
-  <div class="ui container">
-    <div class="ui menu border-background-less borderless stackable mobile-hide">
-      <a href="#" class="ui icon button background-thin-yellow menu-button">
-        <div class="page-title">
-          Nothinglin的个人博客
-        </div>
-        <i class="black sidebar icon top-left"></i>
-      </a>
-      <a href="/" class="item moblie-hide" data-path="/">首页</a>
-      <a href="/archive" class="item moblie-hide" data-path="/archive/">文章列表</a>
-      <a href="/categories" class="item moblie-hide" data-path="/categories/">分类列表</a>
-      <a href="/tags" class="item moblie-hide" data-path="/tags/">标签列表</a>
-      <a href="/friendcircle" class="item moblie-hide" data-path="/friendcircle/">友链资讯</a>
-      <a href="/shuoshuo" class="item moblie-hide">个人随想录</a>
-      <a target="_blank" rel="noopener" href="https://nothinglin.gitbook.io/kao-yan-bi-ji/" class="item moblie-hide">知识库</a>
-      <a target="_blank" rel="noopener" href="http://nothinglin-space.my-free.workers.dev/0:/" class="item moblie-hide">资料库</a>
-      <a href="/comments" class="item moblie-hide">留言</a>
-      <a href="" class="ui item right moblie-hide" id="nav-search"><i class="icon search"></i></a>
-    </div>
-  </div>
-  <!-- 搜索框的弹出内容 -->
-  <div class="ui modal">
-    <!-- 上半部分 -->
-    <div class="header search-title-background search-title-center">
-      <h3>搜索</h3>
-    </div>
-    <!-- 中部 -->
-    <div class="image local-search col-flex">
-      <div class="ui segment background-thin-yellow">
-        <div class="ui action input row-flex">
-          <input type="text" placeholder="搜索..." id="local-search-input">
-          <button class="ui button" id="local-search-close">清空</button>
-        </div>
-        <div id="local-search-result" class="search-result overflow-y local-search col-flex"></div>
-      </div>
-    </div>
-    <div class="actions background-thin-yellow">
-      点击旁边阴影部分可以退出搜索
-    </div>
-  </div>
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Xinyuan&#39;s Blog" title="Xinyuan&#39;s Blog"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Xinyuan&#39;s Blog">Xinyuan&#39;s Blog</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="Menu">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">Home</a></li>
+					
+						<li><a href="/archives">Archives</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="Search" />
+						<input type="hidden" name="q" value="site:www.xinyuanguo.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
 </div>
-
-  <!-- 文章主体布局 -->
-  <div class="ui container margin-top-30">
-    <div class="ui grid stackable">
-      <!-- 文章列表 -->
-<div class="eleven wide column">
-  <div class="ui segment background-thin-yellow content">
-    <div class="ui segment background-thin-yellow border-background-less">
-      <div class="ui segment background-thin-yellow border-background-less">
-        <h2 class="ui center aligned icon header">使用消息队列扩展异步执行的实现方式</h2>
-        <div class="ui segment background-thin-yellow border-background-less">
-          <!-- 文章info -->
-          <div class="row-flex-center">
-            <h5 class="header margin-left-right-10"><i class="address user icon"></i></h5>
-            <h5 class="header margin-left-right-10"><i class="address calendar alternate outline icon"></i>2020年11月06日</h5>
-            <h5 class="header margin-left-right-10"><i class="address eye icon"></i><span id="twikoo_visitors">0</span></h5>
-            <h5 class="header margin-left-right-10"><i class="address folder open outline icon"></i>
-              
-              未分类
-              </h5>
-            <h5 class="header margin-left-right-10"><i class="address tag icon"></i>
-              
-              未设置标签
-              </h5>
-          </div>
-        </div>
-        <!-- 分割线 -->
-        <div class="ui divider title-divider"></div>
-      </div>
-      <div class="ui segment background-thin-yellow content border-background-less top-15"> <h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>你可能在你的项目中用过Spring的@Async注解，以此来将部分方法转化为异步执行，从而提高请求的响应效率</p>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2020/11/06/mqasync/" title="使用消息队列扩展异步执行的实现方式" itemprop="url">使用消息队列扩展异步执行的实现方式</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="xinyuan" target="_blank" itemprop="author">xinyuan</a>
+		
+  <p class="article-time">
+    <time datetime="2020-11-06T09:52:00.000Z" itemprop="datePublished"> Published 2020-11-06</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">Contents</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%9D%E8%B7%AF"><span class="toc-number">2.</span> <span class="toc-text">思路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-number">3.</span> <span class="toc-text">实现</span></a></li></ol>
+		
+		</div>
+		
+		<h1 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h1><p>你可能在你的项目中用过Spring的@Async注解，以此来将部分方法转化为异步执行，从而提高请求的响应效率</p>
 <p>但在服务架构不断的演进之中，这种丢入线程池处理的方式带来的缺陷也愈发明显：</p>
 <ul>
 <li>不利于监控</li>
@@ -262,742 +153,276 @@
 <p>如有帮助或启发，还请点个👍</p>
 <p>附代码仓库：</p>
 <p><a target="_blank" rel="noopener" href="https://github.com/s-mop/homer">https://github.com/s-mop/homer</a></p>
-</div>
-
-
-      <!-- 文章结尾处理 -->
-      <div class="ui divider title-divider"></div>
-      <div class="post-rating">
-        <p>如果喜欢这篇文章，可以给作者评个份哦~</p>
-        <!-- 评分 -->
-        
-        <!-- 文章评论功能 -->
-<div id="wpac-rating"></div>
-<script type="text/javascript">
-  wpac_init = window.wpac_init || [];
-  wpac_init.push({
-    widget: 'Rating',
-    id: 30332
-  });
-  (function() {
-    if ('WIDGETPACK_LOADED' in window) return;
-    WIDGETPACK_LOADED = true;
-    var mc = document.createElement('script');
-    mc.type = 'text/javascript';
-    mc.async = true;
-    mc.src = 'https://embed.widgetpack.com/widget.js';
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(mc, s.nextSibling);
-  })();
-</script>
-
-        
-        <p class="extra-speaking">原文声明: "转载本站文章请注明作者和出处Nothinglin ，请勿用于任何商业用途"</p>
-        <p>公众号：苦逼的学生仔</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 上一篇、下一篇 -->
-  <div class="ui segment background-thin-yellow content">
-    <div class="ui segment background-thin-yellow border-background-less page-prev-next">
-      
-      <a href="/2021/06/01/ms1/" title='回顾《Microservices》系列之一：服务组件化'>
-        <span class="page-prev">上一篇</span>
-      </a>
-      
-
-      
-
-    </div>
-  </div>
-
-  <!-- 文章评论功能 -->
-  <div class="ui segment background-thin-yellow content">
-    <div class="ui segment background-thin-yellow border-background-less">
-      <!-- 评论系统 -->
-      <!-- 来必力 -->
-      
-      <!-- twikoo -->
-      
-      <div id="tcomment"></div>
-<script src="https://cdn.jsdelivr.net/npm/twikoo@1.4.12/dist/twikoo.all.min.js"></script>
-<script>
-  twikoo.init({
-    envId: 'https://www.nothinglintwikoo.ml/',
-    el: '#tcomment',
-    region: 'ap-guangzhou', // 环境地域，默认为 ap-shanghai，如果您的环境地域不是上海，需传此参数
-    path: 'window.location.pathname', // 用于区分不同文章的自定义 js 路径，如果您的文章路径不是 location.pathname，需传此参数
-    lang: 'zh-CN', // 用于手动设定评论区语言，支持的语言列表 https://github.com/imaegoo/twikoo/blob/dev/src/js/utils/i18n/index.js
-  })
-</script>
-
-      
-
-    </div>
-  </div>
-
-</div>
-
-      <!-- 侧边栏 -->
-<div class="five wide column">
-  <!-- 文章目录 -->
   
-  <!-- 文章内容页面中的目录栏 -->
-<div class="ui segment background-thin-yellow article-toc">
-  <div class="ui segment background-title-red padding-title">
-    <h4 class="header ">文章目录：</h4>
-  </div>
-  <div class="container-toc">
-  <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%83%8C%E6%99%AF"><span class="toc-text">背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%9D%E8%B7%AF"><span class="toc-text">思路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-text">实现</span></a></li></ol>
-  </div>
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
 </div>
 
-  
 
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">成就墙：</h4>
-    </div>
-    <!-- <p>这里是饼图文章统计，直观地展示文章的分类数目和其下的文章数~</p> -->
-    <div id="categories-echarts" style="height: 100%"></div>
 
-  </div>
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://www.xinyuanguo.com/2020/11/06/mqasync/" data-title="使用消息队列扩展异步执行的实现方式 | Xinyuan&#39;s Blog" data-tsina="" class="share clearfix">
+	  </div>
+	
+	</div>
 
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">考研倒计时：</h4>
-    </div>
 
-    <div class="countdowntimer">
-  <ul id="countdown">
-    <li>
-      <p class="timeRefDays">days</p>
-      <span class="days"></span>
-    </li>
-    <li>
-      <p class="timeRefHours">hours</p>
-      <span class="hours"></span>
-    </li>
-    <li>
-      <p class="timeRefMinutes">minutes</p>
-      <span class="minutes"></span>
-    </li>
-    <li>
-      <p class="timeRefSeconds">seconds</p>
-      <span class="seconds"></span>
-    </li>
-  </ul>
-</div>
-
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <lottie-player src="https://assets5.lottiefiles.com/packages/lf20_bmfjctya.json"  background="transparent"  speed="1"  style="width: 300px; height: 300px;"  loop autoplay></lottie-player>
-  </div>
-
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">最新留言：</h4>
-    </div>
-    <!-- <p>这里是饼图文章统计，直观地展示文章的分类数目和其下的文章数~</p> -->
-    
-  <div id="hot-comments"></div>
-  <script src="https://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/twikoo@1.4.12/dist/twikoo.all.min.js"></script>
-  <script type="text/javascript">
-    //判断网址,防止访客网址不写http和https
-    function wangzhi(e) {
-      http = e.slice(0, 4)
-      https = e.slice(0, 5)
-      if (http == "http" || https == "https") {
-        return e
-      } else if (e == "" || e == null || e == undefined) {
-        return e
-      } else {
-        e = 'http://' + e
-        return e
-      }
-    }
-
-    //调用twikoo最新评论主函数
-    function newcomment() {
-      twikoo.getRecentComments({
-        envId: 'https://twikoo-nine-lemon.vercel.app', // 环境 ID
-        pageSize: 7, // 获取多少条，默认：10，最大：100
-        includeReply: false // 是否包括最新回复，默认：false
-      }).then(function(res) {
-        console.log(res);
-        var hotComments = $("#hot-comments");
-        for (var i = 0; i < res.length; i++) {
-          if (i === 0) {
-            console.log(res[0]);
-          }
-          var nick = res[i].nick; //访客姓名
-          var content = res[i].commentText; //评论内容
-          var newcontent = content.substring(0, 50); //字数截取后评论内容
-          var url = res[i].url; //文章链接
-          var avatar = res[i].avatar; //评论者头像
-          var link = wangzhi(res[i].link); //评论者网址
-          var updatedAt = res[i].relativeTime; //评论时间
-          var commentId = '#' + res[i].id; //评论id
-          hotComments.append('<li class="px1 pb2 flex items-center"><img style="width: 40px;height:40px" class="circle mx1 listavatar" src="' + avatar +
-            '"><div class="w100"><div class="flex justify-between"><div class="h6 listauthor overflow-hidden" title="' + nick + '"><a  target="_blank" rel="noopener external nofollow noreferrer" href="' + link + '">' + nick +
-            '</a></div><span class="h6 mr1 listdate wenzi hang1">' + updatedAt + '</span></div> <a href="' + url + commentId + '"><div class="h5 list-comcontent overflow-hidden">' + newcontent + '</div></a></div></li>');
-        }
-      }).catch(function(err) {
-        console.error(err);
-      });
-    }
-
-    $(function() {
-      newcomment(); //调用newcomment
-    });
-  </script>
-
-  </div>
-
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">文章分类：</h4>
-    </div>
-    <div class="row-flex flex-wrap categories-lists">
-      
-      <a class="category-tab" id="category-next"><i class="angle double right icon"></i>更多</a>
-    </div>
-  </div>
-
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">文章标签：</h4>
-    </div>
-    <div class="row-flex flex-wrap tabs-lists">
-      
-      <a class="category-tab" id="tab-next"><i class="angle double right icon"></i>更多</a>
-    </div>
-  </div>
-
-  <div class="ui segment background-thin-yellow">
-    <div class="ui segment background-title-red padding-title">
-      <h4 class="header ">订阅作者：</h4>
-    </div>
-
-    <div class="ui card margin-auto">
-      <div class="image">
-        <img src="/img/subscribe.jpg">
-      </div>
-    </div>
-  </div>
-</div>
-<!-- 不要删，下面这两个不是多余的，它是文章列表和侧边栏布局的div结尾标签 -->
-
-    </div>
-  </div>
-  <footer class="ui segment attached background-deep-green margin-top-30">
-  <div class="ui container ">
-    <div class="ui grid stackable footer-hide">
-      <!-- 缩略图 -->
-      <div class="four wide column">
-        <div class="ui card margin-10">
-          <div class="image padding-5">
-            <img class="ui small image" src="/img/nothinglin.jpg">
-          </div>
-        </div>
-      </div>
-      <!-- 内容简介 -->
-      <div class="eleven wide column post-calendar">
-        
-<div id="post-calendar" class="card-content"></div>
-
-<style type="text/css">
-    #post-calendar {
-        width: 847px;
-        height: 236px;
-        margin-bottom: 30px;
-        background-color: #FFFFFF;
-        border-radius: 5px;
-    }
-   #post-calendar  canvas{
-      margin-top:30px!important;
-      margin-bottom:20px!important;
-      padding-bottom:30px;
-    }
-</style>
-
-<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/cungudafa/cdn/js/echarts.min.js"></script>
-<script type="text/javascript">
-    let myChart = echarts.init(document.getElementById('post-calendar'));
-    
-    var option = {
-        title: {
-            top: 0,
-            text: 'Articles-Contributions',
-            left: 'center',
-            textStyle: {
-                color: '#3C4858'
-            }
-        },
-        tooltip: {
-            padding: 10,
-            backgroundColor: '#555',
-            borderColor: '#777',
-            borderWidth: 1,
-            formatter: function (obj) {
-                var value = obj.value;
-                return '<div style="font-size: 14px;">' + value[0] + '：' + value[1] + '</div>';
-            }
-        },
-        visualMap: {
-            show: true,
-            showLabel: true,
-            categories: [0, 1, 2, 3, 4],
-            calculable: true,
-            inRange: {
-                symbol: 'rect',
-                color: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127']
-            },
-            itemWidth: 12,
-            itemHeight: 12,
-            orient: 'horizontal',
-            left: 'center',
-            bottom: 0
-        },
-        calendar: [{
-            left: 'center',
-            range: ["2021-09-07", "2022-09-07"],
-            cellSize: [13, 13],
-            splitLine: {
-                show: false
-            },
-            itemStyle: {
-                width: '1.88679%',
-                height: '15px',
-                color: '#EEEEEE',
-                borderColor: '#FFF',
-                borderWidth: 2
-            },
-            yearLabel: {
-                show: false
-            },
-            monthLabel: {
-                nameMap: 'cn',
-                fontWeight: 'lighter',
-                fontSize: 12
-            },
-            dayLabel: {
-                show: true,
-                formatter: '{start}  1st',
-                fontWeight: 'lighter',
-                nameMap: ['日',' ',' ','三',' ',' ','六',],
-                fontSize: 12
-            }
-        }],
-        series: [{
-            type: 'heatmap',
-            coordinateSystem: 'calendar',
-            calendarIndex: 0,
-            data: [["2021-09-07", 0], ["2021-09-08", 0], ["2021-09-09", 0], ["2021-09-10", 0], ["2021-09-11", 0], ["2021-09-12", 0], ["2021-09-13", 0], ["2021-09-14", 0], ["2021-09-15", 0], ["2021-09-16", 0], ["2021-09-17", 0], ["2021-09-18", 0], ["2021-09-19", 0], ["2021-09-20", 0], ["2021-09-21", 0], ["2021-09-22", 0], ["2021-09-23", 0], ["2021-09-24", 0], ["2021-09-25", 0], ["2021-09-26", 0], ["2021-09-27", 0], ["2021-09-28", 0], ["2021-09-29", 0], ["2021-09-30", 0], ["2021-10-01", 0], ["2021-10-02", 0], ["2021-10-03", 0], ["2021-10-04", 0], ["2021-10-05", 0], ["2021-10-06", 0], ["2021-10-07", 0], ["2021-10-08", 0], ["2021-10-09", 0], ["2021-10-10", 0], ["2021-10-11", 0], ["2021-10-12", 0], ["2021-10-13", 0], ["2021-10-14", 0], ["2021-10-15", 0], ["2021-10-16", 0], ["2021-10-17", 0], ["2021-10-18", 0], ["2021-10-19", 0], ["2021-10-20", 0], ["2021-10-21", 0], ["2021-10-22", 0], ["2021-10-23", 0], ["2021-10-24", 0], ["2021-10-25", 0], ["2021-10-26", 0], ["2021-10-27", 0], ["2021-10-28", 0], ["2021-10-29", 0], ["2021-10-30", 0], ["2021-10-31", 0], ["2021-11-01", 0], ["2021-11-02", 0], ["2021-11-03", 0], ["2021-11-04", 0], ["2021-11-05", 0], ["2021-11-06", 0], ["2021-11-07", 0], ["2021-11-08", 0], ["2021-11-09", 0], ["2021-11-10", 0], ["2021-11-11", 0], ["2021-11-12", 1], ["2021-11-13", 0], ["2021-11-14", 0], ["2021-11-15", 0], ["2021-11-16", 0], ["2021-11-17", 0], ["2021-11-18", 0], ["2021-11-19", 0], ["2021-11-20", 0], ["2021-11-21", 0], ["2021-11-22", 0], ["2021-11-23", 0], ["2021-11-24", 1], ["2021-11-25", 0], ["2021-11-26", 0], ["2021-11-27", 0], ["2021-11-28", 0], ["2021-11-29", 0], ["2021-11-30", 0], ["2021-12-01", 0], ["2021-12-02", 0], ["2021-12-03", 0], ["2021-12-04", 0], ["2021-12-05", 0], ["2021-12-06", 0], ["2021-12-07", 0], ["2021-12-08", 0], ["2021-12-09", 0], ["2021-12-10", 0], ["2021-12-11", 0], ["2021-12-12", 0], ["2021-12-13", 0], ["2021-12-14", 0], ["2021-12-15", 0], ["2021-12-16", 0], ["2021-12-17", 0], ["2021-12-18", 0], ["2021-12-19", 0], ["2021-12-20", 0], ["2021-12-21", 0], ["2021-12-22", 0], ["2021-12-23", 0], ["2021-12-24", 0], ["2021-12-25", 0], ["2021-12-26", 0], ["2021-12-27", 0], ["2021-12-28", 0], ["2021-12-29", 0], ["2021-12-30", 0], ["2021-12-31", 0], ["2022-01-01", 0], ["2022-01-02", 0], ["2022-01-03", 0], ["2022-01-04", 0], ["2022-01-05", 0], ["2022-01-06", 0], ["2022-01-07", 0], ["2022-01-08", 0], ["2022-01-09", 0], ["2022-01-10", 0], ["2022-01-11", 0], ["2022-01-12", 0], ["2022-01-13", 0], ["2022-01-14", 0], ["2022-01-15", 0], ["2022-01-16", 0], ["2022-01-17", 0], ["2022-01-18", 0], ["2022-01-19", 0], ["2022-01-20", 1], ["2022-01-21", 0], ["2022-01-22", 0], ["2022-01-23", 0], ["2022-01-24", 0], ["2022-01-25", 0], ["2022-01-26", 0], ["2022-01-27", 0], ["2022-01-28", 0], ["2022-01-29", 0], ["2022-01-30", 0], ["2022-01-31", 0], ["2022-02-01", 0], ["2022-02-02", 0], ["2022-02-03", 0], ["2022-02-04", 0], ["2022-02-05", 0], ["2022-02-06", 0], ["2022-02-07", 0], ["2022-02-08", 0], ["2022-02-09", 0], ["2022-02-10", 0], ["2022-02-11", 0], ["2022-02-12", 0], ["2022-02-13", 0], ["2022-02-14", 0], ["2022-02-15", 0], ["2022-02-16", 0], ["2022-02-17", 0], ["2022-02-18", 0], ["2022-02-19", 0], ["2022-02-20", 0], ["2022-02-21", 0], ["2022-02-22", 0], ["2022-02-23", 0], ["2022-02-24", 0], ["2022-02-25", 0], ["2022-02-26", 0], ["2022-02-27", 0], ["2022-02-28", 0], ["2022-03-01", 0], ["2022-03-02", 1], ["2022-03-03", 0], ["2022-03-04", 0], ["2022-03-05", 0], ["2022-03-06", 0], ["2022-03-07", 0], ["2022-03-08", 0], ["2022-03-09", 0], ["2022-03-10", 0], ["2022-03-11", 0], ["2022-03-12", 0], ["2022-03-13", 0], ["2022-03-14", 0], ["2022-03-15", 0], ["2022-03-16", 0], ["2022-03-17", 0], ["2022-03-18", 0], ["2022-03-19", 0], ["2022-03-20", 0], ["2022-03-21", 0], ["2022-03-22", 0], ["2022-03-23", 0], ["2022-03-24", 0], ["2022-03-25", 0], ["2022-03-26", 0], ["2022-03-27", 0], ["2022-03-28", 0], ["2022-03-29", 0], ["2022-03-30", 0], ["2022-03-31", 0], ["2022-04-01", 0], ["2022-04-02", 0], ["2022-04-03", 0], ["2022-04-04", 0], ["2022-04-05", 0], ["2022-04-06", 0], ["2022-04-07", 0], ["2022-04-08", 0], ["2022-04-09", 0], ["2022-04-10", 0], ["2022-04-11", 0], ["2022-04-12", 0], ["2022-04-13", 0], ["2022-04-14", 0], ["2022-04-15", 0], ["2022-04-16", 0], ["2022-04-17", 0], ["2022-04-18", 0], ["2022-04-19", 0], ["2022-04-20", 0], ["2022-04-21", 0], ["2022-04-22", 0], ["2022-04-23", 0], ["2022-04-24", 0], ["2022-04-25", 0], ["2022-04-26", 0], ["2022-04-27", 0], ["2022-04-28", 0], ["2022-04-29", 0], ["2022-04-30", 0], ["2022-05-01", 0], ["2022-05-02", 0], ["2022-05-03", 0], ["2022-05-04", 0], ["2022-05-05", 0], ["2022-05-06", 0], ["2022-05-07", 0], ["2022-05-08", 0], ["2022-05-09", 0], ["2022-05-10", 0], ["2022-05-11", 0], ["2022-05-12", 0], ["2022-05-13", 0], ["2022-05-14", 0], ["2022-05-15", 0], ["2022-05-16", 0], ["2022-05-17", 0], ["2022-05-18", 0], ["2022-05-19", 0], ["2022-05-20", 0], ["2022-05-21", 0], ["2022-05-22", 0], ["2022-05-23", 0], ["2022-05-24", 0], ["2022-05-25", 0], ["2022-05-26", 0], ["2022-05-27", 0], ["2022-05-28", 0], ["2022-05-29", 0], ["2022-05-30", 0], ["2022-05-31", 0], ["2022-06-01", 0], ["2022-06-02", 0], ["2022-06-03", 0], ["2022-06-04", 0], ["2022-06-05", 0], ["2022-06-06", 0], ["2022-06-07", 0], ["2022-06-08", 0], ["2022-06-09", 0], ["2022-06-10", 0], ["2022-06-11", 0], ["2022-06-12", 0], ["2022-06-13", 0], ["2022-06-14", 0], ["2022-06-15", 0], ["2022-06-16", 0], ["2022-06-17", 0], ["2022-06-18", 0], ["2022-06-19", 0], ["2022-06-20", 0], ["2022-06-21", 0], ["2022-06-22", 0], ["2022-06-23", 0], ["2022-06-24", 0], ["2022-06-25", 0], ["2022-06-26", 0], ["2022-06-27", 0], ["2022-06-28", 0], ["2022-06-29", 0], ["2022-06-30", 0], ["2022-07-01", 0], ["2022-07-02", 0], ["2022-07-03", 0], ["2022-07-04", 0], ["2022-07-05", 0], ["2022-07-06", 0], ["2022-07-07", 0], ["2022-07-08", 0], ["2022-07-09", 0], ["2022-07-10", 0], ["2022-07-11", 0], ["2022-07-12", 0], ["2022-07-13", 0], ["2022-07-14", 0], ["2022-07-15", 0], ["2022-07-16", 0], ["2022-07-17", 0], ["2022-07-18", 0], ["2022-07-19", 0], ["2022-07-20", 0], ["2022-07-21", 0], ["2022-07-22", 0], ["2022-07-23", 0], ["2022-07-24", 0], ["2022-07-25", 0], ["2022-07-26", 0], ["2022-07-27", 0], ["2022-07-28", 0], ["2022-07-29", 0], ["2022-07-30", 0], ["2022-07-31", 0], ["2022-08-01", 0], ["2022-08-02", 0], ["2022-08-03", 0], ["2022-08-04", 0], ["2022-08-05", 0], ["2022-08-06", 0], ["2022-08-07", 0], ["2022-08-08", 0], ["2022-08-09", 0], ["2022-08-10", 0], ["2022-08-11", 0], ["2022-08-12", 0], ["2022-08-13", 0], ["2022-08-14", 0], ["2022-08-15", 0], ["2022-08-16", 0], ["2022-08-17", 0], ["2022-08-18", 0], ["2022-08-19", 0], ["2022-08-20", 0], ["2022-08-21", 0], ["2022-08-22", 0], ["2022-08-23", 0], ["2022-08-24", 0], ["2022-08-25", 0], ["2022-08-26", 0], ["2022-08-27", 0], ["2022-08-28", 0], ["2022-08-29", 0], ["2022-08-30", 0], ["2022-08-31", 0], ["2022-09-01", 0], ["2022-09-02", 0], ["2022-09-03", 0], ["2022-09-04", 0], ["2022-09-05", 0], ["2022-09-06", 0], ["2022-09-07", 0]]
-        }]
-    };
-    myChart.setOption(option);
-</script>
-
-      </div>
-
-    </div>
-    <!-- 分割线 -->
-    <div class="ui divider title-divider footer-hide"></div>
-    <div class="ui container margin-top-10 page-footer">www.nothinglin.ml © 2021 | Powered by Hexo | Based on Theme: hexo-theme-Nothinglin by Nothinglin.</div>
-    <div class="ui container margin-top-10 page-footer">本博客已运行:<span id=span_dt_dt ></span>天了
-<script language=javascript>
-  function show_date_time() {
-    window.setTimeout("show_date_time()", 1000);
-    BirthDay = new Date("5/2/2021 22:22:45");
-    today = new Date();
-    timeold = (today.getTime() - BirthDay.getTime());
-    sectimeold = timeold / 1000
-    secondsold = Math.floor(sectimeold);
-    msPerDay = 24 * 60 * 60 * 1000
-    e_daysold = timeold / msPerDay
-    daysold = Math.floor(e_daysold);
-    e_hrsold = (e_daysold - daysold) * 24;
-    hrsold = Math.floor(e_hrsold);
-    e_minsold = (e_hrsold - hrsold) * 60;
-    minsold = Math.floor((e_hrsold - hrsold) * 60);
-    seconds = Math.floor((e_minsold - minsold) * 60);
-    span_dt_dt.innerHTML = '<font style=color:#f3eee5>' + daysold + '</font> 天 <font style=color:#f3eee5>' + hrsold + '</font> 时 <font style=color:#f3eee5>' + minsold + '</font> 分 <font style=color:#f3eee5>' + seconds + '</font> 秒';
-  }
-  show_date_time();
-</script>
-</div>
-    <div class="ui container margin-top-10 page-footer">
-      本站总浏览次数：<a href="https://www.hitwebcounter.com" target="_blank" class="counter-a"><img src="https://hitwebcounter.com/counter/counter.php?page=7909387&style=0006&nbdigits=1&type=page&initCount=0" title="Free Counter" Alt="web counter"   border="0" class="counter-img"/></a>  次 |
-      本站总访问人数：<a href="https://www.hitwebcounter.com" target="_blank"  class="counter-a"><img src="https://hitwebcounter.com/counter/counter.php?page=7909389&style=0006&nbdigits=1&type=ip&initCount=0" title="Free Counter" Alt="web counter"   border="0" class="counter-img"/></a>  人
-
-    </div>
-  </div>
 </footer>
 
-  <!-- gototop按钮 -->
-  <button class="gototop"><i class="arrow alternate circle up outline icon big font-thin-yellow"></i></button>
-  <!-- semantic ui js资源 -->
-  <script src="https://cdn.jsdelivr.net/npm/jquery@3.2.1/dist/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script>
-  <script type="text/javascript">
-  $(document).ready(function() {
-
-    var list = $(".tabs-lists a");
-    var numToShow = 15;
-    var button = $("#tab-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
-
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
-
-  });
-</script>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    var list = $(".categories-lists a");
-    var numToShow = 15;
-    var button = $("#category-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
-
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
-
-  });
-</script>
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2021/06/01/ms1/" title="回顾《Microservices》系列之一：服务组件化">
+  <strong>上一篇：</strong><br/>
+  <span>
+  回顾《Microservices》系列之一：服务组件化</span>
+</a>
+</div>
 
 
-<script type="text/javascript">
-  $(document).ready(function() {
+</nav>
 
-    var list = $(".tag1-lists a");
-    var numToShow = 15;
-    var button = $("#tag1-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
+	
 
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="Show Sidebar"></a></div>
 
-  });
-</script>
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="Hide Sidebar"></a></div>
+<aside class="clearfix">
 
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    var list = $(".tag2-lists a");
-    var numToShow = 15;
-    var button = $("#tag2-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
-
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
-
-  });
-</script>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    var list = $(".category1-lists a");
-    var numToShow = 15;
-    var button = $("#category1-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
-
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
-
-  });
-</script>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-
-    var list = $(".category2-lists a");
-    var numToShow = 15;
-    var button = $("#category2-next");
-    var numInList = list.length;
-    list.hide();
-    if (numInList > numToShow) {
-      button.show();
-    }
-    list.slice(0, numToShow).show();
-
-    button.click(function() {
-      var showing = list.filter(':visible').length;
-      list.slice(showing - 1, showing + numToShow).fadeIn();
-      var nowShowing = list.filter(':visible').length;
-      if (nowShowing >= numInList) {
-        button.hide();
-      }
-    });
-
-  });
-</script>
-
-  <!-- 代码高亮插件 -->
-
-<script src="/lib/enlighterjs.min.js"></script>
-
-<script type="text/javascript">
-  // INIT CODE - simple page-wide initialization based on css selectors
-  // - highlight all pre + code tags (CSS3 selectors)
-  // - use javascript as default language
-  // - use theme "enlighter" as default theme
-  // - replace tabs with 2 spaces
-  EnlighterJS.init('pre', 'code', {
-    language: 'javascript',
-    theme: 'enlighter',
-    textOverflow: 'scroll',
-    indent: 2
-  });
-</script>
-
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<script type="text/javascript">
-  var dom = document.getElementById("categories-echarts");
-  var categoriesChart = echarts.init(dom);
-  var app = {};
-  var option;
-
-
-<!-- 核心关键 -->
   
 
 
-  option = {
-    series: [{
-      name: '分类统计',
-      type: 'pie',
-      radius: '55%',
-      data: []
-    }],
-      tooltip: {}
+  
+
+  
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2022 
+		
+		<a href="/about" target="_blank" title="xinyuan">xinyuan</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
   };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+        getSize();
+        if (myWidth >= 1024) {
+          c.click();
+        }
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+        
+    }
+  });
+});
+</script>
 
-  if (option && typeof option === 'object') {
-    categoriesChart.setOption(option);
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
   }
+}); 
 </script>
 
-  
-<script src="/js/jquery.gototop.min.js"></script>
-
-<!-- gototop 脚本 -->
-<script type="text/javascript">
-  $(function() {
-    // $(".gototop").gototop();
-    $(".gototop").gototop({
-      position: 0,
-      duration: 1250,
-      visibleAt: 300,
-      classname: "isvisible"
-    });
-  });
-</script>
-
-  
-<script src="/js/search.js"></script>
-
-<script type="text/javascript">
-  //单击弹出窗口事件
-  $(document).ready(function() {
-    $("#nav-search").click(function() {
-      $('.ui.modal').modal('show');
-      event.preventDefault();
-    });
-    //搜索功能初始化
-    if ($('.local-search').length) {
-      $.getScript('/js/search.js', function() {
-        searchFunc("/search.xml", 'local-search-input', 'local-search-result');
-      });
-    }
-  });
-
-</script>
-
-  <!-- 这是nav菜单栏的选中状态代码 -->
-<script type="text/javascript">
-  $(document).ready(function() {
-    // 获取导航栏中元素
-    let navs = document.querySelectorAll(".item");
-    // 获取当前页面中的地址
-    let pagePath = window.location.pathname;
-    for (let nav of navs) {
-      // 获取属性
-      let navPath = nav.getAttribute("data-path");
-      // alert(pagePath)
-      // console.log(nav.className)
-      if (navPath === pagePath) {
-        // console.log(pagePath)
-        nav.className = "item menu-active";
-      }
-    }
-  });
-</script>
-
-  <script type="text/javascript">
-  $(document).ready(function() {
-    // 获取导航栏中元素
-    let pagePath = window.location.href;
-    // alert(pagePath)
-    let tabs = document.querySelectorAll(".tabs-nav");
-    for (let tab of tabs) {
-      // console.log(nav.href);
-      let tabPath = tab.href;
-      if (tabPath === pagePath) {
-        // console.log(pagePath)
-        tab.className = "tabs-nav  tabs-active";
-      }
-    }
-  });
-</script>
-
-  <!-- 目录栏中滚动定位对应超链接 -->
-<script type="text/javascript">
-  //是否激活目录栏样式
-  function isActiveCatalog() {
-    //设置初始高度向下20
-    let offsetHeight = 20;
-
-    //获取当前页面滚动位置距离页面顶部的高度值***
-    let scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-
-    //hexo渲染的文章页面标题H1、2、····,它的类名是headerlink，获取该类名对应的文章标题标签、
-    let headerLinkList = document.getElementsByClassName("headerlink");
-
-    //hexo渲染生成的目录栏中，标题列表超链接的类名是toc-link获取其全部对应标签内容装进变量里
-    let catalogLinkList = document.getElementsByClassName("toc-link");
-
-    //获取目录栏中所有标题标签元素进行遍历判断与设定
-    for (let i = 0; i < catalogLinkList.length; i++) {
-      //定义这一个目录标题的高度，我也还不是很明白offsettop和scrollTop之间的区别
-      let currentTopCatalog = headerLinkList[i].offsetTop - offsetHeight;
-
-      //定义下一个目录标题的高度******
-      let nextTopCatalog = i + 1 === headerLinkList.length ? //判断这一个目录是不是最后一个标题，如果是就赋值无穷，不是就赋值下一个目录标题的高度
-        Infinity : headerLinkList[i + 1].offsetTop - offsetHeight;
-
-      //判断目录标题是不是为当前标题(设置当前目录标题为激活状态)**********
-      if (scrollTop >= currentTopCatalog && scrollTop < nextTopCatalog) {
-        catalogLinkList[i].className = "toc-link toc-active"
-      } else {
-        catalogLinkList[i].className = "toc-link"
-      }
-
-    }
-
-  }
-
-  isActiveCatalog()
-  document.addEventListener("scroll", isActiveCatalog, false);
-</script>
-
-  <script type="text/javascript">
-  $('.menu-button').click(function(){
-    $('.item').toggleClass('moblie-hide')
-  })
-</script>
-
-  <script type="text/javascript">
-  $('.wechat-link')
-    .popup({
-      inline: true,
-      on: 'click'
-    });
-
-  $('.public-link')
-    .popup({
-      inline: true,
-      on: 'click'
-    });
-
-</script>
-
-  <script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
-<!-- 实现fancybox的脚本 -->
- <script type="text/javascript">
-   // 集成fancybox, 为所有img元素添加父元素
-   $("p img").each(function () {
-      // $(this).attr("data-fancybox", "gallery"); 直接给img添加data-fancybox会导致点击图片后图片消失
-       var element = document.createElement("a");
-       $(element).attr("data-fancybox", "gallery");
-       $(element).attr("href", $(this).attr("src"));
-       $(this).wrap(element);
-   });
- </script>
-
-  <!-- 朋友圈功能 -->
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
-  
-<script src="/js/request.js"></script>
 
 
-  
-
-  
-
-  
-<script src="/js/countdown.js"></script>
+<!-- Analytics Begin -->
 
 
-</body>
 
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="Back to Top"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
 </html>
