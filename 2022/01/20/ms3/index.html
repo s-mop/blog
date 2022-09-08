@@ -20,16 +20,16 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"www.xinyuanguo.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.13.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="本文是笔者作为企业架构咨询顾问，以《Microservices》文章作为主轴，在不同客户企业经历各式各样服务化项目后的所感所想  本章节原标题为：“Products not Projects” 原文主要描述了“项目制”与微服务支持者主张的“产品制”，其中主要区别这里整理了一个对比表：  结合在企业中看到的情况，补充以下两点：  项目制与产品质很可能是不同管理维度共同存在比如在企业做预算、规划等工">
+    <meta name="description" content="本文是笔者作为企业架构咨询顾问，以《Microservices》文章作为主轴，在不同客户企业经历各式各样服务化项目后的所感所想  核心观点回顾 本章节原标题为：“Products not Projects”  原文主要描述了“项目制”与微服务支持者主张的“产品制”，其中主要区别这里整理了一个对比表：  观点扩展结合在企业中看到的情况，补充以下两点： 1.  项目制与产品质很可能是不同管理维度共同">
 <meta property="og:type" content="article">
 <meta property="og:title" content="回顾《Microservices》系列之三：微服务是“产品”而非“项目”">
 <meta property="og:url" content="http://www.xinyuanguo.com/2022/01/20/ms3/index.html">
 <meta property="og:site_name" content="随记随想">
-<meta property="og:description" content="本文是笔者作为企业架构咨询顾问，以《Microservices》文章作为主轴，在不同客户企业经历各式各样服务化项目后的所感所想  本章节原标题为：“Products not Projects” 原文主要描述了“项目制”与微服务支持者主张的“产品制”，其中主要区别这里整理了一个对比表：  结合在企业中看到的情况，补充以下两点：  项目制与产品质很可能是不同管理维度共同存在比如在企业做预算、规划等工">
+<meta property="og:description" content="本文是笔者作为企业架构咨询顾问，以《Microservices》文章作为主轴，在不同客户企业经历各式各样服务化项目后的所感所想  核心观点回顾 本章节原标题为：“Products not Projects”  原文主要描述了“项目制”与微服务支持者主张的“产品制”，其中主要区别这里整理了一个对比表：  观点扩展结合在企业中看到的情况，补充以下两点： 1.  项目制与产品质很可能是不同管理维度共同">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://oscimg.oschina.net/oscnet/up-a449c2c727deb7d35b3c90a05f3bc4e60fa.png">
 <meta property="article:published_time" content="2022-01-20T08:57:00.000Z">
-<meta property="article:modified_time" content="2022-09-07T07:27:48.413Z">
+<meta property="article:modified_time" content="2022-09-08T06:52:39.958Z">
 <meta property="article:author" content="xinyuan.guo@thoughtworks.com">
 <meta property="article:tag" content="SoftwareEngineering,EnterpriseArchitecture,Microservice">
 <meta name="twitter:card" content="summary">
@@ -99,7 +99,7 @@
 
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           Table of Contents
@@ -112,6 +112,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%A7%82%E7%82%B9%E5%9B%9E%E9%A1%BE"><span class="nav-number">1.</span> <span class="nav-text">核心观点回顾</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%82%E7%82%B9%E6%89%A9%E5%B1%95"><span class="nav-number">2.</span> <span class="nav-text">观点扩展</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%A1%B9%E7%9B%AE%E5%88%B6%E4%B8%8E%E4%BA%A7%E5%93%81%E8%B4%A8%E5%BE%88%E5%8F%AF%E8%83%BD%E6%98%AF%E4%B8%8D%E5%90%8C%E7%AE%A1%E7%90%86%E7%BB%B4%E5%BA%A6%E5%85%B1%E5%90%8C%E5%AD%98%E5%9C%A8"><span class="nav-number">2.1.</span> <span class="nav-text">1.  项目制与产品质很可能是不同管理维度共同存在</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9B%B4%E5%A5%BD%E7%9A%84%E6%8A%80%E6%9C%AF%E6%94%AF%E6%8C%81"><span class="nav-number">2.2.</span> <span class="nav-text">2.  更好的技术支持</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -200,7 +201,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">Edited on</span>
-      <time title="Modified: 2022-09-07 15:27:48" itemprop="dateModified" datetime="2022-09-07T15:27:48+08:00">2022-09-07</time>
+      <time title="Modified: 2022-09-08 14:52:39" itemprop="dateModified" datetime="2022-09-08T14:52:39+08:00">2022-09-08</time>
     </span>
 
   
@@ -216,17 +217,17 @@
         <blockquote>
 <p>本文是笔者作为企业架构咨询顾问，以《Microservices》文章作为主轴，在不同客户企业经历各式各样服务化项目后的所感所想</p>
 </blockquote>
+<h1 id="核心观点回顾"><a href="#核心观点回顾" class="headerlink" title="核心观点回顾"></a>核心观点回顾</h1><blockquote>
 <p>本章节原标题为：“Products not Projects”</p>
+</blockquote>
 <p>原文主要描述了“项目制”与微服务支持者主张的“产品制”，其中主要区别这里整理了一个对比表：</p>
 <p><img src="https://oscimg.oschina.net/oscnet/up-a449c2c727deb7d35b3c90a05f3bc4e60fa.png"></p>
-<p>结合在企业中看到的情况，补充以下两点：</p>
-<ol>
-<li><p>项目制与产品质很可能是不同管理维度共同存在<br>比如在企业做预算、规划等工作事项时，侧重的是成本估算、资源协调、可行性评估等工作，这时往往是项目制可以解决基本诉求。而后续实施落地时如果涉及多个微服务，那么各个微服务可以按照自己产品化的思维给与反馈（排期、意见等）</p>
-</li>
-<li><p>更好的技术支持<br>文中多次提到让“developers”与“users”之间建立更好的沟通关系，而这在项目制或者大组织下的应用条件下是更难做到的。我们希望颗粒度更小的微服务可以更快的定位到支持人员，并且支持者是开发人员而非单纯的运维人员，以此提高响应速度及解决问题的效率</p>
-</li>
-</ol>
+<h1 id="观点扩展"><a href="#观点扩展" class="headerlink" title="观点扩展"></a>观点扩展</h1><p>结合在企业中看到的情况，补充以下两点：</p>
+<h2 id="1-项目制与产品质很可能是不同管理维度共同存在"><a href="#1-项目制与产品质很可能是不同管理维度共同存在" class="headerlink" title="1.  项目制与产品质很可能是不同管理维度共同存在"></a>1.  项目制与产品质很可能是不同管理维度共同存在</h2><p>比如在企业做预算、规划等工作事项时，侧重的是成本估算、资源协调、可行性评估等工作，这时往往是项目制可以解决基本诉求。而后续实施落地时如果涉及多个微服务，那么各个微服务可以按照自己产品化的思维给与反馈（排期、意见等）</p>
+<h2 id="2-更好的技术支持"><a href="#2-更好的技术支持" class="headerlink" title="2.  更好的技术支持"></a>2.  更好的技术支持</h2><p>文中多次提到让“developers”与“users”之间建立更好的沟通关系，而这在项目制或者大组织下的应用条件下是更难做到的。我们希望颗粒度更小的微服务可以更快的定位到支持人员，并且支持者是开发人员而非单纯的运维人员，以此提高响应速度及解决问题的效率</p>
+<blockquote>
 <p>《Microservices》原文：<br><a target="_blank" rel="noopener" href="https://martinfowler.com/articles/microservices.html">https://martinfowler.com/articles/microservices.html</a></p>
+</blockquote>
 
     </div>
 
